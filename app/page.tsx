@@ -330,9 +330,19 @@ function renderInlineMarkdown(text: string): React.ReactNode[] {
   };
 
   return text
-    .split(/(\*\*[^*]+\*\*|\[[^\]]+\]\((?:[^()\s]+)\)|https?:\/\/\S+)/g)
+    .split(/(\*\*<u>[\s\S]+?<\/u>\*\*|\*\*[^*]+\*\*|<u>[\s\S]+?<\/u>|\[[^\]]+\]\((?:[^()\s]+)\)|https?:\/\/\S+)/g)
     .filter(Boolean)
     .map((part, idx) => {
+      const boldUnderlineMatch = part.match(/^\*\*<u>([\s\S]+)<\/u>\*\*$/i);
+      if (boldUnderlineMatch) {
+        const innerText = boldUnderlineMatch[1].trim();
+        return (
+          <strong key={`${part}-${idx}`} className="font-semibold text-white">
+            <u className="underline underline-offset-2 decoration-white/70">{innerText}</u>
+          </strong>
+        );
+      }
+
       if (/^\*\*[^*]+\*\*$/.test(part)) {
         const boldText = part.slice(2, -2).trim();
         if (plainUrlPattern.test(boldText)) {
@@ -341,6 +351,16 @@ function renderInlineMarkdown(text: string): React.ReactNode[] {
         return (
           <strong key={`${part}-${idx}`} className="font-semibold text-white">
             {boldText}
+          </strong>
+        );
+      }
+
+      const underlineMatch = part.match(/^<u>([\s\S]+)<\/u>$/i);
+      if (underlineMatch) {
+        const underlineText = underlineMatch[1].trim();
+        return (
+          <strong key={`${part}-${idx}`} className="font-semibold text-white">
+            <u className="underline underline-offset-2 decoration-white/70">{underlineText}</u>
           </strong>
         );
       }
