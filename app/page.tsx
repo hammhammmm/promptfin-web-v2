@@ -206,7 +206,7 @@ interface AssistantMessageBodyProps {
 type MarkdownBlock =
   | { type: "h1"; text: string }
   | { type: "h3"; text: string }
-  | { type: "ol"; items: string[] }
+  | { type: "ol"; items: string[]; start: number }
   | { type: "ul"; items: string[] }
   | { type: "p"; text: string };
 
@@ -235,6 +235,7 @@ function parseMarkdownBlocks(input: string): MarkdownBlock[] {
   let paragraphLines: string[] = [];
   let listItems: string[] = [];
   let listType: "ol" | "ul" | null = null;
+  let listStart = 1;
 
   const flushParagraph = () => {
     if (paragraphLines.length === 0) return;
@@ -245,9 +246,14 @@ function parseMarkdownBlocks(input: string): MarkdownBlock[] {
 
   const flushList = () => {
     if (listItems.length === 0) return;
-    blocks.push({ type: listType ?? "ol", items: [...listItems] });
+    if (listType === "ol") {
+      blocks.push({ type: "ol", items: [...listItems], start: listStart });
+    } else {
+      blocks.push({ type: "ul", items: [...listItems] });
+    }
     listItems = [];
     listType = null;
+    listStart = 1;
   };
 
   for (const rawLine of lines) {
@@ -272,12 +278,13 @@ function parseMarkdownBlocks(input: string): MarkdownBlock[] {
       continue;
     }
 
-    const listMatch = line.match(/^\d+\.\s+(.+)$/);
+    const listMatch = line.match(/^(\d+)\.\s+(.+)$/);
     if (listMatch) {
       flushParagraph();
       if (listType && listType !== "ol") flushList();
+      if (!listType) listStart = Number(listMatch[1]);
       listType = "ol";
-      listItems.push(listMatch[1].trim());
+      listItems.push(listMatch[2].trim());
       continue;
     }
 
@@ -413,7 +420,7 @@ function MarkdownMessage({ content }: { content: string }) {
   }
 
   return (
-    <div className="w-full space-y-4 text-white/85 text-[16px] leading-relaxed">
+    <div className="w-full space-y-6 text-white/85 text-[16px] leading-relaxed">
       {blocks.map((block, index) => {
         const isLastBlock = index === blocks.length - 1;
         if (block.type === "h1") {
@@ -442,7 +449,11 @@ function MarkdownMessage({ content }: { content: string }) {
 
         if (block.type === "ol") {
           return (
-            <ol key={`ol-${index}`} className="list-decimal pl-8 space-y-4 marker:text-white/70 text-md">
+            <ol
+              key={`ol-${index}`}
+              start={block.start}
+              className="my-2 list-decimal pl-8 space-y-6 marker:text-white/70 text-md"
+            >
               {block.items.map((item, itemIndex) => (
                 <li
                   key={`li-${itemIndex}`}
@@ -463,7 +474,7 @@ function MarkdownMessage({ content }: { content: string }) {
           return (
             <ul
               key={`ul-${index}`}
-              className="list-disc pl-8 space-y-4 marker:text-white/70 text-md break-words [overflow-wrap:anywhere]"
+              className="my-1 list-disc pl-10 space-y-3 marker:text-white/70 text-md break-words [overflow-wrap:anywhere]"
             >
               {block.items.map((item, itemIndex) => (
                 <li
