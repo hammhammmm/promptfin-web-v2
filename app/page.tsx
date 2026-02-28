@@ -220,12 +220,20 @@ function normalizeMarkdownText(input: string): string {
     .replace(/<h1>\s*([\s\S]*?)\s*<\/h1>/gi, (_, text: string) => `\n# ${text.trim()}\n`)
     .replace(/<h3>\s*([\s\S]*?)\s*<\/h3>/gi, (_, text: string) => `\n### ${text.trim()}\n`);
 
-  // Some upstream replies flatten bullet points into one line: "... </h3> * a * b * c"
-  // Split each "* " into its own line so list parsing is stable.
-  return withHeadingMarkdown.replace(
-    /(^|[^\n*])\s\*\s+(?=\S)/g,
-    (_, prefix: string) => `${prefix}\n* `,
-  );
+  // Normalize only the specific "heading + flattened bullets" shape.
+  // Example: "### หัวข้อ * ข้อ 1 * ข้อ 2" -> keep heading line + split bullets.
+  return withHeadingMarkdown
+    .split("\n")
+    .map((line) => {
+      if (!/^###\s+/.test(line)) return line;
+      const parts = line.split(/\s+\*\s+/);
+      if (parts.length <= 1) return line;
+      const [heading, ...items] = parts;
+      const cleaned = items.map((item) => item.trim()).filter(Boolean);
+      if (cleaned.length === 0) return heading;
+      return `${heading}\n* ${cleaned.join("\n* ")}`;
+    })
+    .join("\n");
 }
 
 function parseMarkdownBlocks(input: string): MarkdownBlock[] {
