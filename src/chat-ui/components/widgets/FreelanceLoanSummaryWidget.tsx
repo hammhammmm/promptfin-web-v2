@@ -83,7 +83,7 @@ export function FreelanceLoanSummaryWidget({ disabled, onAction }: Props) {
                   label: "ยกเลิก",
                   style: "secondary",
                   disabled,
-                  onClick: () => onAction("cancel_loan"),
+                  onClick: () => onAction("confirm_request"),
                 },
           ]}
         />
