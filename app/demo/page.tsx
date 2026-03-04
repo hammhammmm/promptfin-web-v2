@@ -11,7 +11,7 @@ import { InputArea } from "@/src/chat-ui/components/InputArea";
 import { VoiceInputModal } from "@/src/chat-ui/components/VoiceInputModal";
 import { StarsBackground } from "@/src/chat-ui/effects/StarsBackground";
 import { AccountNavbar, AccountOption } from "@/src/chat-ui/components/AccountNavbar";
-import { ChatOutput, UIAction, useChat } from "@/src/chat-ui/hooks/useChat";
+import { ChatOutput, UIAction, useChatDemo } from "@/src/chat-ui/hooks/useChatDemo";
 import { PROFILE_CONFIG } from "@/src/chat-ui/config/profile";
 import {
   ConfirmationAction,
@@ -24,6 +24,7 @@ import {
 } from "@/src/chat-ui/components/widgets/PaymentReceiptWidget";
 import { PaymentCancelledWidget } from "@/src/chat-ui/components/widgets/PaymentCancelledWidget";
 import { PaymentActionListWidget } from "@/src/chat-ui/components/widgets/PaymentActionListWidget";
+import { AdjustLimitAction, AdjustLimitWidget } from "@/src/chat-ui/components/widgets/AdjustLimitWidget";
 import { SplashScreen } from "@/src/chat-ui/components/SplashScreen";
 import { formatDestinationIdentifier } from "@/src/chat-ui/components/widgets/TransferShared";
 
@@ -130,6 +131,7 @@ type PaymentConfirmationUI = {
     destinationBank?: string;
     currency?: string;
     uuid?: string;
+    autoOpenPin?: boolean;
   };
   actions?: ReadonlyArray<WidgetButton>;
 };
@@ -168,10 +170,20 @@ type PaymentActionListUI = {
   actions?: ReadonlyArray<WidgetButton>;
 };
 
+type AdjustLimitUI = {
+  type: "adjust_limit";
+  props: {
+    prepared_id: string;
+    message: string;
+  };
+  actions?: ReadonlyArray<WidgetButton>;
+};
+
 type UIWidget =
   | PaymentConfirmationUI
   | PaymentReceiptUI
   | PaymentActionListUI
+  | AdjustLimitUI
   | (Record<string, unknown> & { type?: unknown });
 
 interface Message {
@@ -645,6 +657,17 @@ function isPaymentActionListUI(v: unknown): v is PaymentActionListUI {
   return props["items"].every(isPaymentActionListUIItem);
 }
 
+function isAdjustLimitUI(v: unknown): v is AdjustLimitUI {
+  if (!isRecord(v) || v["type"] !== "adjust_limit") return false;
+  const props = v["props"];
+  if (!isRecord(props)) return false;
+  if (typeof props["prepared_id"] !== "string") return false;
+  if (typeof props["message"] !== "string") return false;
+  const actions = v["actions"];
+  if (typeof actions === "undefined") return true;
+  return Array.isArray(actions) && actions.every(isWidgetButton);
+}
+
 function extractPreparedIdFromActionConfig(config: unknown): string {
   if (!isRecord(config)) return "";
 
@@ -971,6 +994,7 @@ function AssistantMessageBody({
             destinationBank={ui.props.destinationBank}
             amount={ui.props.amount}
             currency={ui.props.currency}
+            autoOpenPin={ui.props.autoOpenPin === true}
             actions={(ui.actions ?? []) as ConfirmationAction[]}
             disabled={isLoading || !isWidgetVisible || isConfirmWidgetExiting}
             onAction={(config) => onConfirmWidgetAction(index, message, config)}
@@ -1039,6 +1063,20 @@ function AssistantMessageBody({
           />
         </div>
       )}
+
+      {canRenderWidgets && isAdjustLimitUI(ui) && (
+        <div
+          className={`transition-all duration-500 ease-out will-change-transform will-change-opacity ${widgetRevealClass}`}
+        >
+          <AdjustLimitWidget
+            message={ui.props.message}
+            actions={(ui.actions ?? []) as ReadonlyArray<AdjustLimitAction>}
+            disabled={isLoading || !isWidgetVisible || isConfirmWidgetExiting}
+            onAction={(config) => onConfirmWidgetAction(index, message, config)}
+          />
+        </div>
+      )}
+
     </>
   );
 }
@@ -1059,7 +1097,7 @@ export default function HomePage() {
     isLoading,
     error,
     profile,
-  } = useChat({ accountId: selectedAccountId });
+  } = useChatDemo({ accountId: selectedAccountId });
   const [mounted, setMounted] = React.useState<boolean>(false);
   const [showSplash, setShowSplash] = React.useState<boolean>(true);
   const [isVoiceModalOpen, setIsVoiceModalOpen] = React.useState<boolean>(false);
@@ -1068,20 +1106,7 @@ export default function HomePage() {
     null,
   );
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
-  const chatScrollContainerRef = React.useRef<HTMLElement | null>(null);
   const streamScrollRafRef = React.useRef<number | null>(null);
-  const scrollChatToBottom = React.useCallback((behavior: ScrollBehavior = "smooth") => {
-    const container = chatScrollContainerRef.current;
-    if (!container) {
-      messagesEndRef.current?.scrollIntoView({ behavior });
-      return;
-    }
-
-    container.scrollTo({
-      top: container.scrollHeight,
-      behavior,
-    });
-  }, []);
   const ttsAudioRef = React.useRef<HTMLAudioElement | null>(null);
   const ttsQueueRef = React.useRef<string[]>([]);
   const prefetchedAudioQueueRef = React.useRef<string[]>([]);
@@ -1199,7 +1224,7 @@ export default function HomePage() {
       if (!resp.ok) throw new Error("Failed to fetch latest trace");
       return (await resp.json()) as { sessionId: string | null; message: string | null };
     },
-    enabled: isLoading,
+    enabled: false,
     refetchInterval: 1500,
     refetchIntervalInBackground: true,
     staleTime: 0,
@@ -1456,17 +1481,17 @@ export default function HomePage() {
 
   React.useEffect(() => {
     if (messages.length > 0 || isLoading) {
-      scrollChatToBottom("smooth");
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [isLoading, messages, scrollChatToBottom]);
+  }, [messages, isLoading]);
 
   const requestStreamingScroll = React.useCallback(() => {
     if (streamScrollRafRef.current !== null) return;
     streamScrollRafRef.current = window.requestAnimationFrame(() => {
       streamScrollRafRef.current = null;
-      scrollChatToBottom("smooth");
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     });
-  }, [scrollChatToBottom]);
+  }, []);
 
   React.useEffect(() => {
     return () => {
@@ -1666,6 +1691,12 @@ export default function HomePage() {
       } else if (config["action"] === "confirm_transfer") {
         uiAction = { action: "confirm_transfer", prepared_id };
         pendingText = "กำลังทำรายการโอน...";
+      } else if (config["action"] === "adjust_limit") {
+        uiAction = { action: "adjust_limit", prepared_id };
+        pendingText = "กำลังปรับวงเงิน...";
+      } else if (config["action"] === "skip_adjust_limit") {
+        uiAction = { action: "skip_adjust_limit", prepared_id };
+        pendingText = "รับทราบครับ...";
       }
     }
 
@@ -1878,7 +1909,6 @@ export default function HomePage() {
             />
           </div>
           <main
-            ref={chatScrollContainerRef}
             className={`flex-1 w-full pb-32 flex flex-col ${
               isFocused && !hasAssistantWidget
                 ? "overflow-hidden"
@@ -2029,7 +2059,7 @@ export default function HomePage() {
               setIsFocused(true);
               setTimeout(() => {
                 window.scrollTo(0, 0);
-                scrollChatToBottom("smooth");
+                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
               }, 200);
             }}
             onBlur={(e) => {

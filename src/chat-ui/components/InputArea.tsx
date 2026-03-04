@@ -9,6 +9,7 @@ type Props = {
   value: string;
   onChange: (val: string) => void;
   onSend: () => void;
+  onMicClick?: () => void;
   onCancel?: () => void;
   disabled?: boolean;
   isLoading?: boolean;
@@ -18,6 +19,7 @@ export function InputArea({
   value,
   onChange,
   onSend,
+  onMicClick,
   onCancel,
   disabled,
   isLoading,
@@ -61,7 +63,12 @@ export function InputArea({
                     onCancel();
                     return;
                   }
-                  if (!inputDisabled && hasValue) onSend();
+                  if (inputDisabled) return;
+                  if (hasValue) {
+                    onSend();
+                    return;
+                  }
+                  onMicClick?.();
                 }}
               >
                 {isCancelEnabled && <Square size={20} fill="currentColor" />}

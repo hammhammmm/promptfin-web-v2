@@ -42,6 +42,7 @@ interface Props {
   destinationBank?: string;
   amount: number;
   currency?: string;
+  autoOpenPin?: boolean;
   actions: ConfirmationAction[];
   disabled?: boolean;
   onAction: (config: ActionConfig) => void;
@@ -56,6 +57,7 @@ export function PaymentConfirmationWidget({
   destinationBank,
   amount,
   currency,
+  autoOpenPin,
   actions,
   disabled,
   onAction,
@@ -73,6 +75,7 @@ export function PaymentConfirmationWidget({
   const slipCardRef = React.useRef<HTMLDivElement>(null);
   const pendingSubmitTimeoutRef = React.useRef<number | null>(null);
   const pinInputLockTimeoutRef = React.useRef<number | null>(null);
+  const hasAutoOpenedPinRef = React.useRef(false);
 
   const clearPendingSubmitTimeout = React.useCallback(() => {
     if (pendingSubmitTimeoutRef.current !== null) {
@@ -124,6 +127,15 @@ export function PaymentConfirmationWidget({
     setPinError(null);
     setIsPinModalOpen(true);
   };
+
+  React.useEffect(() => {
+    if (!autoOpenPin || hasAutoOpenedPinRef.current || isPinModalOpen) return;
+    const confirmAction = actions.find((action) => isConfirmAction(action.onClick));
+    if (!confirmAction) return;
+
+    hasAutoOpenedPinRef.current = true;
+    openPinModal(confirmAction.onClick);
+  }, [actions, autoOpenPin, isPinModalOpen]);
 
   const closePinModal = () => {
     setIsPinModalOpen(false);

@@ -182,8 +182,9 @@ function tryRecoverPaymentCancelledUiFromTruncated(
   s: string,
 ): Record<string, unknown> | null {
   const hasCancelledType = /"type"\s*:\s*"payment_cancelled"/.test(s);
-  const hasPreparedMarker = /"prepared_id"\s*:/.test(s);
-  if (!hasCancelledType && !hasPreparedMarker) return null;
+  // Be strict: only recover when payload explicitly points to payment_cancelled.
+  // A generic prepared_id appears in many non-cancel flows (e.g. payment_confirmation).
+  if (!hasCancelledType) return null;
 
   const pid = /"prepared_id"\s*:\s*"([^"]*)"/.exec(s)?.[1] ?? "";
 
@@ -480,6 +481,14 @@ function normalizeApiResponseToChatOutput(data: unknown): ChatOutput | null {
       if (isRecord(msg) && typeof msg["content"] === "string") {
         return postProcessChatOutput(normalizeLegacyContentToOutput(msg["content"]));
       }
+      if (isRecord(msg) && isRecord(msg["content"])) {
+        const contentObj = msg["content"] as Record<string, unknown>;
+        if ("reply_text" in contentObj || "ui" in contentObj) {
+          return postProcessChatOutput(
+            promoteNestedUiIfAny(coerceChatOutputFromObject(contentObj)),
+          );
+        }
+      }
     }
   }
 
@@ -532,6 +541,12 @@ async function fetchProfile(accountId: string): Promise<ProfileApiResponse> {
 type UseChatOptions = {
   accountId?: string;
 };
+
+type StreamEvent =
+  | { type: "delta"; text?: string }
+  | { type: "done"; response?: unknown }
+  | { type: "tts_ready"; audio_url?: string }
+  | { type: string; [key: string]: unknown };
 
 export function useChat(options?: UseChatOptions) {
   const [isLoading, setIsLoading] = useState(false);
@@ -619,6 +634,153 @@ export function useChat(options?: UseChatOptions) {
       accountId,
     });
 
+  const sendMessageStream = async (
+    messages: ChatMessage[],
+    onDelta: (deltaText: string) => void,
+    onTtsReady?: (audioUrl: string) => void,
+  ): Promise<ChatOutput | null> => {
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/v1/chat/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages,
+          client_event_id: createClientEventId(),
+          sessionId: sessionIdRef.current,
+          accountId,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok || !response.body) {
+        const rawError = await response.text().catch(() => "");
+        let data: unknown = rawError;
+        try {
+          data = JSON.parse(rawError);
+        } catch {
+          // keep string
+        }
+        const fallback = response.status >= 500
+          ? "Server error. Please try again."
+          : "Request failed. Please try again.";
+        throw new Error(extractApiErrorMessage(data, fallback));
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buffer = "";
+      let finalOutput: ChatOutput | null = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        let separatorIndex = buffer.indexOf("\n\n");
+        while (separatorIndex !== -1) {
+          const rawEvent = buffer.slice(0, separatorIndex);
+          buffer = buffer.slice(separatorIndex + 2);
+          separatorIndex = buffer.indexOf("\n\n");
+
+          const lines = rawEvent
+            .split("\n")
+            .map((line) => line.trim())
+            .filter(Boolean);
+          const dataLines = lines
+            .filter((line) => line.startsWith("data:"))
+            .map((line) => line.slice(5).trim());
+          if (!dataLines.length) continue;
+
+          const joined = dataLines.join("\n");
+          if (joined === "[DONE]") continue;
+
+          let evt: StreamEvent | null = null;
+          try {
+            const parsed: unknown = JSON.parse(joined);
+            evt = isRecord(parsed) ? (parsed as StreamEvent) : null;
+          } catch {
+            evt = null;
+          }
+          if (!evt) continue;
+
+          if (evt.type === "delta" && typeof evt.text === "string" && evt.text) {
+            onDelta(evt.text);
+          } else if (
+            evt.type === "tts_ready" &&
+            typeof evt.audio_url === "string" &&
+            evt.audio_url.trim()
+          ) {
+            onTtsReady?.(evt.audio_url.trim());
+          } else if (evt.type === "done") {
+            const output = normalizeApiResponseToChatOutput(evt.response) ??
+              normalizeLegacyContentToOutput(
+                typeof evt.response === "string" ? evt.response : JSON.stringify(evt.response ?? {}),
+              );
+            if (output) {
+              finalOutput = output;
+            }
+          }
+        }
+      }
+
+      const shouldFallbackToNonStream =
+        !finalOutput ||
+        (((finalOutput.reply_text ?? "").trim().length === 0) && !finalOutput.ui);
+
+      if (!shouldFallbackToNonStream) {
+        return finalOutput;
+      }
+
+      const fallbackResponse = await fetch("/api/v1/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages,
+          client_event_id: createClientEventId(),
+          sessionId: sessionIdRef.current,
+          accountId,
+        }),
+        signal: controller.signal,
+      });
+
+      const fallbackRaw = await fallbackResponse.text();
+      let fallbackData: unknown = fallbackRaw;
+      try {
+        fallbackData = JSON.parse(fallbackRaw);
+      } catch {
+        // keep string
+      }
+
+      if (!fallbackResponse.ok) {
+        const fallback = fallbackResponse.status >= 500
+          ? "Server error. Please try again."
+          : "Request failed. Please try again.";
+        throw new Error(extractApiErrorMessage(fallbackData, fallback));
+      }
+
+      return (
+        normalizeApiResponseToChatOutput(fallbackData) ??
+        normalizeLegacyContentToOutput(fallbackRaw)
+      );
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        return null;
+      }
+      setError(err instanceof Error ? err.message : "An error occurred");
+      return null;
+    } finally {
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+      }
+      setIsLoading(false);
+    }
+  };
+
   const sendUIAction = (ui_action: UIAction) =>
     post({
       ui_action,
@@ -629,6 +791,7 @@ export function useChat(options?: UseChatOptions) {
 
   return {
     sendMessage,
+    sendMessageStream,
     sendUIAction,
     cancelRequest,
     resetSession,
