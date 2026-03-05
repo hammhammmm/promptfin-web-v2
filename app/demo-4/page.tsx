@@ -94,6 +94,24 @@ function isDemo4BulkPaymentPrompt(text: string): boolean {
     .toLowerCase()
     .replace(/\s+/g, " ")
     .trim();
+  const numberNormalized = normalized.replace(/,/g, "");
+  const hasStandaloneNumber = (num: string) =>
+    new RegExp(`(^|\\D)${num}(\\D|$)`).test(numberNormalized);
+
+  if (
+    hasStandaloneNumber("500") &&
+    hasStandaloneNumber("300") &&
+    hasStandaloneNumber("2000")
+  ) {
+    return true;
+  }
+  if (
+    normalized.includes(
+      "โอนเงินให้แม่ 500 เติมเงิน ais ให้ลูก 300 จ่ายค่าไฟ 2000",
+    )
+  ) {
+    return true;
+  }
   return DEMO4_BULK_PHRASE_SIGNATURE.every((token) => normalized.includes(token));
 }
 
