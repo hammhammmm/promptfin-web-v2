@@ -117,13 +117,21 @@ const LOAN_INTRO_MESSAGE = [
   "**ข้อมูลเบื้องต้นของคุณเจนครับ**",
 ].join("\n");
 const LOAN_POST_WIDGET_MESSAGE = "คุณเจนจะกู้เท่าไหร่ดีครับ?";
-const LOAN_10K_SUMMARY_MESSAGE = "ได้ค่ะ~ สรุปให้ดูก่อนนะครับ 👇";
+const LOAN_10K_SUMMARY_MESSAGE = "ได้ครับ~ สรุปให้ดูก่อนนะครับ 👇";
 const LOAN_APPROVED_MESSAGE = [
   "อนุมัติสินเชื่อเรียบร้อย! 🎉",
   "เงิน 10,000 บาท โอนเข้าบัญชีของคุณเจนแล้วครับ",
   "ยอดคงเหลือปัจจุบัน: 15,200.00 บาท",
 ].join("\n");
-const DOCS_RECEIVED_MESSAGE = "ได้รับเอกสารแล้วครับ กำลังประเมิน... ⏳";
+const DOCS_RECEIVED_MESSAGE = [
+  "ปิงได้รับเอกสารครบแล้วครับ กำลังตรวจสอบข้อมูลให้นะครับ…",
+  "⏳ ใช้เวลาประมาณ 1–2 นาทีครับ",
+].join("\n");
+const DOCS_APPROVED_MESSAGE = [
+  "อนุมัติเรียบร้อยแล้วครับคุณเจน 🎉",
+  "เงินจะเข้าบัญชีกรุงไทยของคุณเจนภายในวันนี้นะครับ",
+  "ถ้าต้องการให้ปิงช่วยเรื่องอื่นเพิ่มเติม บอกได้เลยนะครับ 😊",
+].join("\n");
 
 function randomThinkingDelayMs(min = 3000, max = 5000): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -256,6 +264,7 @@ export default function DemoTwoPage() {
     },
   ]);
   const [inputText, setInputText] = React.useState("");
+  const [ttsEnabled, setTtsEnabled] = React.useState(false);
   const [isThinking, setIsThinking] = React.useState(false);
   const [isStreamingReply, setIsStreamingReply] = React.useState(false);
   const [isLoanPinModalOpen, setIsLoanPinModalOpen] = React.useState(false);
@@ -268,6 +277,7 @@ export default function DemoTwoPage() {
   const slowScrollRafRef = React.useRef<number | null>(null);
   const isLoanStreamingRef = React.useRef(false);
   const uploadPdfInputRef = React.useRef<HTMLInputElement | null>(null);
+  const hasScrolledToFirstSystemMessageRef = React.useRef(false);
 
   const cancelSlowScroll = React.useCallback(() => {
     if (slowScrollRafRef.current !== null) {
@@ -278,21 +288,24 @@ export default function DemoTwoPage() {
 
   const scrollToBottom = React.useCallback(
     (slow = false) => {
+      if (hasScrolledToFirstSystemMessageRef.current) return;
       const container = chatScrollContainerRef.current;
       if (!container) return;
 
+      const firstSystemMessage = container.querySelector<HTMLElement>(
+        '[data-chat-system-message="true"]',
+      );
+      if (!firstSystemMessage) return;
+
       if (!slow) {
-        cancelSlowScroll();
-        container.scrollTo({
-          top: container.scrollHeight,
-          behavior: "smooth",
-        });
+        firstSystemMessage.scrollIntoView({ behavior: "smooth", block: "start" });
+        hasScrolledToFirstSystemMessageRef.current = true;
         return;
       }
 
       cancelSlowScroll();
       const startTop = container.scrollTop;
-      const targetTop = container.scrollHeight - container.clientHeight;
+      const targetTop = firstSystemMessage.offsetTop;
       const delta = targetTop - startTop;
       if (delta <= 0) return;
 
@@ -307,6 +320,7 @@ export default function DemoTwoPage() {
           slowScrollRafRef.current = window.requestAnimationFrame(tick);
         } else {
           slowScrollRafRef.current = null;
+          hasScrolledToFirstSystemMessageRef.current = true;
         }
       };
 
@@ -411,7 +425,7 @@ export default function DemoTwoPage() {
     appendMessage("assistant", DOCS_RECEIVED_MESSAGE);
     setIsThinking(true);
     pendingReplyTimerRef.current = window.setTimeout(() => {
-      appendMessage("assistant", "", "freelance_assessment_result");
+      appendMessage("assistant", DOCS_APPROVED_MESSAGE);
       setIsThinking(false);
       pendingReplyTimerRef.current = null;
     }, 5000);
@@ -542,14 +556,15 @@ export default function DemoTwoPage() {
   const handleFreelanceLoanSummaryAction = React.useCallback(
     (action: FreelanceLoanSummaryActionKey) => {
       if (isThinking || isStreamingReply) return;
-      if (action === "confirm_request") {
-        appendMessage("user", "ยืนยัน");
-        setPinIntent("freelance_confirm");
-        setIsLoanPinModalOpen(true);
-        resetLoanPinState();
+      if (action === "upload_docs") {
+        appendMessage("user", "อัพโหลดเอกสาร");
+        openPdfPicker();
+        return;
       }
+      appendMessage("user", "ไว้ทีหลัง");
+      scheduleAssistantReply("ได้เลยครับ หากพร้อมแล้วพิมพ์ว่าอัพโหลดเอกสารได้ทุกเมื่อครับ");
     },
-    [appendMessage, isStreamingReply, isThinking, resetLoanPinState],
+    [appendMessage, isStreamingReply, isThinking, openPdfPicker, scheduleAssistantReply],
   );
 
   const handleFreelanceLoanSubmittedAction = React.useCallback(
@@ -700,7 +715,8 @@ export default function DemoTwoPage() {
               accounts={accountOptions}
               selectedAccountId={selectedAccountId}
               onSelectAccount={setSelectedAccountId}
-              ttsEnabled={false}
+              ttsEnabled={ttsEnabled}
+              onToggleTts={setTtsEnabled}
             />
           </div>
 
@@ -714,6 +730,7 @@ export default function DemoTwoPage() {
                   {messages.map((message) => (
                     <div
                       key={message.id}
+                      data-chat-system-message={message.role === "assistant" ? "true" : undefined}
                       className={`${
                         message.role === "user"
                           ? "ml-auto w-fit max-w-[85%] rounded-xl rounded-tr-md border border-white/20 bg-white/20 px-4 py-2 text-white break-words"

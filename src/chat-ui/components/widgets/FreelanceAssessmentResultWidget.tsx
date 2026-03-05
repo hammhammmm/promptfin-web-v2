@@ -47,7 +47,7 @@ export function FreelanceAssessmentResultWidget() {
           ))}
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-4 space-y-2.5">
+        <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-4 space-y-2.5 mt-3">
           <div>
             <p className="text-white text-base font-semibold leading-tight">สินเชื่อกรุงไทยใจป้ำ</p>
             <p className="text-white/70 text-xs leading-tight">Krungthai Jai Pump</p>

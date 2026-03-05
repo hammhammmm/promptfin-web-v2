@@ -60,7 +60,7 @@ export function AccountNavbar({
   accounts,
   selectedAccountId,
   onSelectAccount,
-  ttsEnabled = true,
+  ttsEnabled = false,
   onToggleTts,
 }: Props) {
   const [isOpen, setIsOpen] = React.useState(false);

@@ -1,7 +1,7 @@
 import React from "react";
 import { TransferActionButtons, TransferDivider, TransferGlassCard } from "./TransferShared";
 
-export type FreelanceLoanSummaryActionKey = "confirm_request";
+export type FreelanceLoanSummaryActionKey = "upload_docs" | "later";
 
 const SUMMARY_ROWS = [
   ["วงเงินกู้", "10,000 บาท"],
@@ -58,29 +58,38 @@ export function FreelanceLoanSummaryWidget({ disabled, onAction }: Props) {
         </div>
 
         <TransferDivider />
-        <p className="text-white/90 text-sm leading-relaxed">
-          เนื่องจากเป็นอาชีพอิสระ จะต้องรอผลอนุมัติภายใน 1 วันทำการครับ
-          <br />
-          ระบบจะแจ้งผลผ่านแอปและ SMS นะครับ
-        </p>
+        <div className="text-white/90 text-sm leading-relaxed space-y-2">
+          <p>
+            ถ้าคุณเจนโอเคกับเงื่อนไขนี้ เดี๋ยวเราไปขั้นตอนเตรียมเอกสารเพื่อยื่นกู้กันนะครับ 📄✨
+          </p>
+          <p>ตอนนี้ปิงตรวจให้แล้ว เห็นว่า</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>✅ บัตรประชาชน</li>
+            <li>✅ หน้าสมุดบัญชีกรุงไทย</li>
+          </ul>
+          <p>อัปโหลดเข้าระบบเรียบร้อยแล้วครับ 🎉</p>
+          <p>เหลืออีกอย่างเดียวครับ</p>
+          <p className="font-semibold">เอกสารที่ยังต้องอัปโหลดเพิ่ม</p>
+          <p>📌 รายการเดินบัญชี 6 เดือนล่าสุด (ใช้ยืนยันรายได้จากงานฟรีแลนซ์)</p>
+        </div>
 
         <TransferDivider />
         <TransferActionButtons
           actions={[
             {
-              key: "confirm_request",
-              label: "ยืนยันการขอสินเชื่อ",
+              key: "upload_docs",
+              label: "อัพโหลดเอกสาร",
               style: "primary",
               disabled,
-              onClick: () => onAction("confirm_request"),
+              onClick: () => onAction("upload_docs"),
             },
-               {
-                  key: "cancel_loan",
-                  label: "ยกเลิก",
-                  style: "secondary",
-                  disabled,
-                  onClick: () => onAction("confirm_request"),
-                },
+            {
+              key: "later",
+              label: "ไว้ทีหลัง",
+              style: "secondary",
+              disabled,
+              onClick: () => onAction("later"),
+            },
           ]}
         />
       </TransferGlassCard>
