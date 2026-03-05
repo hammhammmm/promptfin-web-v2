@@ -7,31 +7,17 @@ type LoanProfileRow = {
 };
 
 const PROFILE_ROWS: LoanProfileRow[] = [
-  { label: "ชื่อ", value: "เจน มงคล" },
-  { label: "อาชีพ", value: "พนักงานบริษัท" },
   { label: "เงินเดือน", value: "35,000 บาท/เดือน" },
   { label: "อายุงาน", value: "3 ปี 2 เดือน" },
-  { label: "เงินเดือนเข้าบัญชีนี้", value: "สม่ำเสมอ 24 เดือนล่าสุด" },
+  { label: "วงเงินกู้สูงสุด", value: "175,000 บาท (5 เท่าของรายได้สุทธิ)" },
 ];
 
 export function LoanProfileTableWidget() {
   return (
     <div className="flex flex-col gap-3 w-full min-w-[300px] mt-4">
       <TransferGlassCard>
-        <div className="space-y-1">
-          <p className="text-white text-lg font-bold leading-tight">ข้อมูลเบื้องต้นสำหรับประเมินสินเชื่อ</p>
-        </div>
-
-        <TransferDivider />
-
         <div className="hidden md:block overflow-x-auto rounded-xl border border-white/10">
           <table className="w-full min-w-[560px] text-left text-sm text-white/85">
-            <thead className="bg-white/5">
-              <tr>
-                <th className="px-3 py-2.5 font-semibold">ข้อมูล</th>
-                <th className="px-3 py-2.5 font-semibold">รายละเอียด</th>
-              </tr>
-            </thead>
             <tbody>
               {PROFILE_ROWS.map((row) => (
                 <tr key={row.label} className="border-t border-white/10">
@@ -53,6 +39,25 @@ export function LoanProfileTableWidget() {
               <p className="mt-1 text-white text-sm">{row.value}</p>
             </div>
           ))}
+        </div>
+
+        <TransferDivider />
+        <div className="space-y-1">
+          <p className="text-white text-lg font-bold leading-tight">สินเชื่อกรุงไทยเปย์เดะ</p>
+          <p className="text-white/75 text-sm">Krungthai Payday</p>
+        </div>
+
+        <TransferDivider />
+        <div className="space-y-2.5 text-sm text-white/90 leading-relaxed">
+          <p>
+            ดอกเบี้ย: MRR + 7% ต่อปี
+            <br />
+             (MRR = 6.845%ต่อปี ณ 2 มี.ค. 69)
+          </p>
+          <p>ผ่อนได้สูงสุด: 5 ปี</p>
+          <p>ลดต้นลดดอก</p>
+          <p>ไม่ต้องค้ำ</p>
+          <p>ประกันชีวิต: ไม่บังคับ</p>
         </div>
       </TransferGlassCard>
     </div>

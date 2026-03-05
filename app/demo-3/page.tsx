@@ -109,11 +109,15 @@ const CAR_SHORTFALL_MESSAGE = [
   "ต้องการให้ผมช่วยดำเนินการอย่างไรดีครับ",
 ].join("\n");
 const LOAN_INTRO_MESSAGE = [
-  "ยินดีให้บริการครับ",
-  "ผมจะช่วยประเมินสินเชื่อเบื้องต้นให้ครับ",
+  "**ยินดีให้บริการครับ**",
   "",
-  "ผมดึงข้อมูลเบื้องต้นจากระบบแล้วครับ",
+  "ผมจะช่วยประเมินสินเชื่อเบื้องต้นให้ครับ สำหรับ **ฟรีแลนซ์ก็กู้ได้นะครับ**",
+  'ปิงดูข้อมูลให้แล้ว มีรายได้เข้าบัญชีกรุงไทยสม่ำเสมอ ปิงเลยอยากแนะนำ "**สินเชื่อกรุงไทยใจป้ำ**" ครับ ออกแบบมาสำหรับคนทำอาชีพอิสระเลย',
+  "",
+  "**ข้อมูลเบื้องต้นของคุณเจนครับ**",
 ].join("\n");
+const LOAN_POST_WIDGET_MESSAGE = "คุณเจนจะกู้เท่าไหร่ดีครับ?";
+const LOAN_10K_SUMMARY_MESSAGE = "ได้ค่ะ~ สรุปให้ดูก่อนนะครับ 👇";
 const LOAN_APPROVED_MESSAGE = [
   "อนุมัติสินเชื่อเรียบร้อย! 🎉",
   "เงิน 10,000 บาท โอนเข้าบัญชีของคุณเจนแล้วครับ",
@@ -388,12 +392,15 @@ export default function DemoTwoPage() {
       setIsThinking(false);
       setIsStreamingReply(true);
       isLoanStreamingRef.current = true;
-      await streamAssistantMessage(LOAN_INTRO_MESSAGE, "freelance_loan_profile");
+      await streamAssistantMessage(LOAN_INTRO_MESSAGE, "freelance_assessment_result");
+      scrollToBottom(false);
+      await sleep(600);
+      await streamAssistantMessage(LOAN_POST_WIDGET_MESSAGE);
       isLoanStreamingRef.current = false;
       setIsStreamingReply(false);
       pendingReplyTimerRef.current = null;
     }, 5000);
-  }, [clearPendingReplyTimer, streamAssistantMessage]);
+  }, [clearPendingReplyTimer, scrollToBottom, sleep, streamAssistantMessage]);
 
   const openPdfPicker = React.useCallback(() => {
     uploadPdfInputRef.current?.click();
@@ -659,7 +666,7 @@ export default function DemoTwoPage() {
       /^10[,，]?000$/.test(trimmed.replace(/\s+/g, ""))
     ) {
       clearPendingReplyTimer();
-      scheduleAssistantReply("", "freelance_loan_summary");
+      scheduleAssistantReply(LOAN_10K_SUMMARY_MESSAGE, "freelance_loan_summary");
       setInputText("");
       return;
     }

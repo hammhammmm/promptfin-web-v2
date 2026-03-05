@@ -7,10 +7,12 @@ import {
 
 const SUMMARY_ROWS = [
   { label: "วงเงินกู้", value: "10,000 บาท" },
-  { label: "ดอกเบี้ย", value: "15% ต่อปี" },
+  { label: "ดอกเบี้ย", value: "MRR+7% (MRR = 6.845%ต่อปี ณ 2 มี.ค. 69)" },
   { label: "ระยะเวลาผ่อน", value: "12 เดือน" },
-  { label: "ผ่อนต่อเดือน", value: "~903 บาท" },
-  { label: "ยอดรวมชำระ", value: "~10,836 บาท" },
+  { label: "ค่างวด/เดือน", value: "~896 บาท" },
+  { label: "ดอกเบี้ยรวม", value: "~752 บาท" },
+  { label: "จ่ายทั้งหมด", value: "~10,752 บาท" },
+  { label: "ค่าอากรแสตมป์", value: "5 บาท" },
 ];
 
 export type LoanOfferActionKey = "confirm_loan" | "cancel_loan";

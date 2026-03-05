@@ -105,27 +105,12 @@ const CAR_SHORTFALL_MESSAGE = [
   "ต้องการให้ผมช่วยดำเนินการอย่างไรดีครับ",
 ].join("\n");
 const LOAN_INTRO_MESSAGE = [
-  "ยินดีให้บริการครับ",
-  "ผมจะช่วยประเมินสินเชื่อเบื้องต้นให้ครับ",
-  "",
-  "ผมดึงข้อมูลเบื้องต้นจากระบบแล้วครับ",
+  "โอเคครับ! 😊 ปิงเช็คข้อมูลให้แล้วนะครับ เจนมีเงินเดือนเข้าบัญชีกรุงไทยสม่ำเสมอเลย ปิงเลยอยากแนะนำ \"สินเชื่อกรุงไทยเปย์เดะ\" ครับ เหมาะกับพนักงานประจำมากครับ",
+  "ข้อมูลเบื้องต้นของคุณเจนครับ:",
 ].join("\n");
-const LOAN_RECOMMEND_MESSAGE = [
-  "จากข้อมูลของคุณ ผมขอแนะนำ **สินเชื่อส่วนบุคคล** ครับ",
-  "**วงเงินอนุมัติสูงสุด:** 150,000 บาท",
-  "**ดอกเบี้ย:** 15% ต่อปี",
-  "**ระยะเวลาผ่อน:** 12-60 เดือน",
-  "**ผ่อนขั้นต่ำ:** ~3,375 บาท/เดือน (60ด.)",
-  "ไม่ต้องมีคนค้ำ ✅",
-  "อนุมัติเร็ว ภายใน 15 นาที ✅",
-  "",
-  "เอกสารที่ต้องใช้:",
-  "- ✅ บัตรประชาชน (ยืนยันตัวตนผ่านแอปได้)",
-  "- ✅ สลิปเงินเดือน 1 เดือนล่าสุด",
-  "- ✅ Statement ย้อนหลัง 3 เดือน (ดึงจากระบบได้เลย)",
-  "",
-  "ต้องการกู้จำนวนเท่าไหร่ ครับ?",
-].join("\n");
+const LOAN_POST_WIDGET_MESSAGE = "คุณเจนจะกู้เท่าไหร่ดีครับ?";
+const LOAN_10K_USER_MESSAGE = "เอา 10,000 ก็พอค่ะ แค่ให้พอจ่ายค่างวดรถ";
+const LOAN_10K_SUMMARY_MESSAGE = "โอเคค่ะ~ ขอสรุปให้ดูก่อนนะครับ 👇";
 const LOAN_APPROVED_MESSAGE = [
   "อนุมัติสินเชื่อเรียบร้อย! 🎉",
   "เงิน 10,000 บาท โอนเข้าบัญชีของคุณเจนแล้วครับ",
@@ -399,8 +384,8 @@ export default function DemoTwoPage() {
       isLoanStreamingRef.current = true;
       await streamAssistantMessage(LOAN_INTRO_MESSAGE, "loan_profile");
       scrollToBottom(false);
-      await sleep(1000);
-      await streamAssistantMessage(LOAN_RECOMMEND_MESSAGE);
+      await sleep(600);
+      await streamAssistantMessage(LOAN_POST_WIDGET_MESSAGE);
       isLoanStreamingRef.current = false;
       setIsStreamingReply(false);
       pendingReplyTimerRef.current = null;
@@ -594,8 +579,14 @@ export default function DemoTwoPage() {
     if (isThinking || isStreamingReply) return;
     const trimmed = inputText.trim();
     if (!trimmed) return;
-    appendMessage("user", trimmed);
     const normalized = trimmed.replace(/\s+/g, "");
+    const isLoan10kRequest =
+      /ขอ\s*10[,，]?\s*000\s*บาท/.test(trimmed) ||
+      normalized.includes("ขอ10000บาท") ||
+      /^10[,，]?000$/.test(trimmed.replace(/\s+/g, ""));
+
+    appendMessage("user", isLoan10kRequest ? LOAN_10K_USER_MESSAGE : trimmed);
+
     if (normalized.includes("จ่ายค่างวดรถ")) {
       showCarInstallmentShortfall();
       setInputText("");
@@ -613,13 +604,9 @@ export default function DemoTwoPage() {
       setInputText("");
       return;
     }
-    if (
-      /ขอ\s*10[,，]?\s*000\s*บาท/.test(trimmed) ||
-      normalized.includes("ขอ10000บาท") ||
-      /^10[,，]?000$/.test(trimmed.replace(/\s+/g, ""))
-    ) {
+    if (isLoan10kRequest) {
       clearPendingReplyTimer();
-      scheduleAssistantReply("", "loan_offer_summary");
+      scheduleAssistantReply(LOAN_10K_SUMMARY_MESSAGE, "loan_offer_summary");
       setInputText("");
       return;
     }

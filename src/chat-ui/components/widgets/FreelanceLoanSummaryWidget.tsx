@@ -3,6 +3,16 @@ import { TransferActionButtons, TransferDivider, TransferGlassCard } from "./Tra
 
 export type FreelanceLoanSummaryActionKey = "confirm_request";
 
+const SUMMARY_ROWS = [
+  ["วงเงินกู้", "10,000 บาท"],
+  ["ดอกเบี้ย", "21% ต่อปี (คงที่)"],
+  ["ระยะผ่อน", "12 เดือน"],
+  ["ค่างวด/เดือน", "~932 บาท (เท่ากันทุกเดือน)"],
+  ["ดอกเบี้ยรวม", "~1,184 บาท"],
+  ["จ่ายทั้งหมด", "~11,184 บาท"],
+  ["ค่าอากรแสตมป์", "5 บาท"],
+] as const;
+
 interface Props {
   disabled?: boolean;
   onAction: (action: FreelanceLoanSummaryActionKey) => void;
@@ -25,14 +35,7 @@ export function FreelanceLoanSummaryWidget({ disabled, onAction }: Props) {
               </tr>
             </thead>
             <tbody>
-              {[
-                ["วงเงินกู้", "10,000 บาท"],
-                ["ดอกเบี้ย", "20% ต่อปี"],
-                ["ระยะเวลาผ่อน", "12 เดือน"],
-                ["ผ่อนต่อเดือน", "~926 บาท"],
-                ["ยอดรวมชำระ", "~11,112 บาท"],
-                ["คนค้ำ", "ไม่ต้อง (วงเงินไม่เกิน 20,000)"],
-              ].map(([label, value]) => (
+              {SUMMARY_ROWS.map(([label, value]) => (
                 <tr key={label} className="border-t border-white/10">
                   <td className="px-3 py-3">{label}</td>
                   <td className="px-3 py-3">{value}</td>
@@ -43,14 +46,7 @@ export function FreelanceLoanSummaryWidget({ disabled, onAction }: Props) {
         </div>
 
         <div className="md:hidden space-y-2.5">
-          {[
-            ["วงเงินกู้", "10,000 บาท"],
-            ["ดอกเบี้ย", "20% ต่อปี"],
-            ["ระยะเวลาผ่อน", "12 เดือน"],
-            ["ผ่อนต่อเดือน", "~926 บาท"],
-            ["ยอดรวมชำระ", "~11,112 บาท"],
-            ["คนค้ำ", "ไม่ต้อง (วงเงินไม่เกิน 20,000)"],
-          ].map(([label, value]) => (
+          {SUMMARY_ROWS.map(([label, value]) => (
             <div
               key={label}
               className="rounded-xl border border-white/10 bg-white/5 px-3 py-2.5"

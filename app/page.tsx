@@ -1063,7 +1063,7 @@ export default function HomePage() {
   const [mounted, setMounted] = React.useState<boolean>(false);
   const [showSplash, setShowSplash] = React.useState<boolean>(true);
   const [isVoiceModalOpen, setIsVoiceModalOpen] = React.useState<boolean>(false);
-  const [ttsEnabled, setTtsEnabled] = React.useState<boolean>(true);
+  const [ttsEnabled, setTtsEnabled] = React.useState<boolean>(false);
   const [viewportHeight, setViewportHeight] = React.useState<number | null>(
     null,
   );
