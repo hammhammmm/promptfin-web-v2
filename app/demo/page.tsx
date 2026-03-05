@@ -1107,7 +1107,6 @@ export default function HomePage() {
   );
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const streamScrollRafRef = React.useRef<number | null>(null);
-  const hasScrolledToFirstSystemMessageRef = React.useRef<boolean>(false);
   const ttsAudioRef = React.useRef<HTMLAudioElement | null>(null);
   const ttsQueueRef = React.useRef<string[]>([]);
   const prefetchedAudioQueueRef = React.useRef<string[]>([]);
@@ -1139,17 +1138,6 @@ export default function HomePage() {
     setIsFocused(false);
     streamingAssistantIndexesRef.current = new Set();
     receiptDisplayContextByPreparedIdRef.current = {};
-    hasScrolledToFirstSystemMessageRef.current = false;
-  }, []);
-
-  const scrollToFirstSystemMessage = React.useCallback(() => {
-    if (hasScrolledToFirstSystemMessageRef.current) return;
-    const firstSystemMessage = document.querySelector<HTMLElement>(
-      '[data-chat-system-message="true"]',
-    );
-    if (!firstSystemMessage) return;
-    firstSystemMessage.scrollIntoView({ behavior: "smooth", block: "start" });
-    hasScrolledToFirstSystemMessageRef.current = true;
   }, []);
 
   const accountOptions = React.useMemo(() => {
@@ -1493,17 +1481,17 @@ export default function HomePage() {
 
   React.useEffect(() => {
     if (messages.length > 0 || isLoading) {
-      scrollToFirstSystemMessage();
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [isLoading, messages, scrollToFirstSystemMessage]);
+  }, [messages, isLoading]);
 
   const requestStreamingScroll = React.useCallback(() => {
     if (streamScrollRafRef.current !== null) return;
     streamScrollRafRef.current = window.requestAnimationFrame(() => {
       streamScrollRafRef.current = null;
-      scrollToFirstSystemMessage();
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     });
-  }, [scrollToFirstSystemMessage]);
+  }, []);
 
   React.useEffect(() => {
     return () => {
@@ -1935,7 +1923,6 @@ export default function HomePage() {
                   return (
                     <div
                       key={index}
-                      data-chat-system-message={msg.role === "assistant" ? "true" : undefined}
                       className={`flex flex-col ${
                         msg.role === "user"
                           ? "self-end items-end  max-w-[85%]"

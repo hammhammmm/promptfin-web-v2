@@ -277,7 +277,6 @@ export default function DemoTwoPage() {
   const slowScrollRafRef = React.useRef<number | null>(null);
   const isLoanStreamingRef = React.useRef(false);
   const uploadPdfInputRef = React.useRef<HTMLInputElement | null>(null);
-  const hasScrolledToFirstSystemMessageRef = React.useRef(false);
 
   const cancelSlowScroll = React.useCallback(() => {
     if (slowScrollRafRef.current !== null) {
@@ -288,24 +287,21 @@ export default function DemoTwoPage() {
 
   const scrollToBottom = React.useCallback(
     (slow = false) => {
-      if (hasScrolledToFirstSystemMessageRef.current) return;
       const container = chatScrollContainerRef.current;
       if (!container) return;
 
-      const firstSystemMessage = container.querySelector<HTMLElement>(
-        '[data-chat-system-message="true"]',
-      );
-      if (!firstSystemMessage) return;
-
       if (!slow) {
-        firstSystemMessage.scrollIntoView({ behavior: "smooth", block: "start" });
-        hasScrolledToFirstSystemMessageRef.current = true;
+        cancelSlowScroll();
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: "smooth",
+        });
         return;
       }
 
       cancelSlowScroll();
       const startTop = container.scrollTop;
-      const targetTop = firstSystemMessage.offsetTop;
+      const targetTop = container.scrollHeight - container.clientHeight;
       const delta = targetTop - startTop;
       if (delta <= 0) return;
 
@@ -320,7 +316,6 @@ export default function DemoTwoPage() {
           slowScrollRafRef.current = window.requestAnimationFrame(tick);
         } else {
           slowScrollRafRef.current = null;
-          hasScrolledToFirstSystemMessageRef.current = true;
         }
       };
 
@@ -730,7 +725,6 @@ export default function DemoTwoPage() {
                   {messages.map((message) => (
                     <div
                       key={message.id}
-                      data-chat-system-message={message.role === "assistant" ? "true" : undefined}
                       className={`${
                         message.role === "user"
                           ? "ml-auto w-fit max-w-[85%] rounded-xl rounded-tr-md border border-white/20 bg-white/20 px-4 py-2 text-white break-words"
