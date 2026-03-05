@@ -1106,6 +1106,7 @@ export default function HomePage() {
     null,
   );
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
+  const chatScrollContainerRef = React.useRef<HTMLElement | null>(null);
   const streamScrollRafRef = React.useRef<number | null>(null);
   const ttsAudioRef = React.useRef<HTMLAudioElement | null>(null);
   const ttsQueueRef = React.useRef<string[]>([]);
@@ -1127,6 +1128,37 @@ export default function HomePage() {
     React.useState<boolean>(false);
   const previousAccountIdRef = React.useRef<string>(selectedAccountId);
   const lastToastErrorRef = React.useRef<string | null>(null);
+  const STREAM_SCROLL_THRESHOLD_PX = 180;
+  const STREAM_SCROLL_COMFORT_GAP_PX = 96;
+
+  const isNearBottom = React.useCallback(() => {
+    const container = chatScrollContainerRef.current;
+    if (!container) return true;
+    const distanceToBottom =
+      container.scrollHeight - container.clientHeight - container.scrollTop;
+    return distanceToBottom <= STREAM_SCROLL_THRESHOLD_PX;
+  }, [STREAM_SCROLL_THRESHOLD_PX]);
+
+  const scrollChatTail = React.useCallback(
+    (behavior: ScrollBehavior = "smooth", mode: "bottom" | "comfort" = "bottom") => {
+      const container = chatScrollContainerRef.current;
+      if (!container) {
+        messagesEndRef.current?.scrollIntoView({
+          behavior,
+          block: mode === "comfort" ? "nearest" : "end",
+        });
+        return;
+      }
+
+      const targetBottom = Math.max(container.scrollHeight - container.clientHeight, 0);
+      const targetTop =
+        mode === "comfort"
+          ? Math.max(targetBottom - STREAM_SCROLL_COMFORT_GAP_PX, 0)
+          : targetBottom;
+      container.scrollTo({ top: targetTop, behavior });
+    },
+    [STREAM_SCROLL_COMFORT_GAP_PX],
+  );
 
   const resetChatState = React.useCallback(() => {
     setInputText("");
@@ -1481,17 +1513,18 @@ export default function HomePage() {
 
   React.useEffect(() => {
     if (messages.length > 0 || isLoading) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      scrollChatTail("smooth");
     }
-  }, [messages, isLoading]);
+  }, [isLoading, messages, scrollChatTail]);
 
   const requestStreamingScroll = React.useCallback(() => {
+    if (!isNearBottom()) return;
     if (streamScrollRafRef.current !== null) return;
     streamScrollRafRef.current = window.requestAnimationFrame(() => {
       streamScrollRafRef.current = null;
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      scrollChatTail("smooth", "comfort");
     });
-  }, []);
+  }, [isNearBottom, scrollChatTail]);
 
   React.useEffect(() => {
     return () => {
@@ -1909,6 +1942,7 @@ export default function HomePage() {
             />
           </div>
           <main
+            ref={chatScrollContainerRef}
             className={`flex-1 w-full pb-32 flex flex-col ${
               isFocused && !hasAssistantWidget
                 ? "overflow-hidden"
@@ -2059,7 +2093,7 @@ export default function HomePage() {
               setIsFocused(true);
               setTimeout(() => {
                 window.scrollTo(0, 0);
-                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+                scrollChatTail("smooth");
               }, 200);
             }}
             onBlur={(e) => {

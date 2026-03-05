@@ -277,6 +277,8 @@ export default function DemoTwoPage() {
   const slowScrollRafRef = React.useRef<number | null>(null);
   const isLoanStreamingRef = React.useRef(false);
   const uploadPdfInputRef = React.useRef<HTMLInputElement | null>(null);
+  const STREAM_SCROLL_THRESHOLD_PX = 180;
+  const STREAM_SCROLL_COMFORT_GAP_PX = 96;
 
   const cancelSlowScroll = React.useCallback(() => {
     if (slowScrollRafRef.current !== null) {
@@ -285,15 +287,29 @@ export default function DemoTwoPage() {
     }
   }, []);
 
+  const isNearBottom = React.useCallback(() => {
+    const container = chatScrollContainerRef.current;
+    if (!container) return true;
+    const distanceToBottom =
+      container.scrollHeight - container.clientHeight - container.scrollTop;
+    return distanceToBottom <= STREAM_SCROLL_THRESHOLD_PX;
+  }, [STREAM_SCROLL_THRESHOLD_PX]);
+
   const scrollToBottom = React.useCallback(
-    (slow = false) => {
+    (slow = false, mode: "bottom" | "comfort" = "bottom") => {
       const container = chatScrollContainerRef.current;
       if (!container) return;
+
+      const targetBottom = Math.max(container.scrollHeight - container.clientHeight, 0);
+      const targetTop =
+        mode === "comfort"
+          ? Math.max(targetBottom - STREAM_SCROLL_COMFORT_GAP_PX, 0)
+          : targetBottom;
 
       if (!slow) {
         cancelSlowScroll();
         container.scrollTo({
-          top: container.scrollHeight,
+          top: targetTop,
           behavior: "smooth",
         });
         return;
@@ -301,7 +317,6 @@ export default function DemoTwoPage() {
 
       cancelSlowScroll();
       const startTop = container.scrollTop;
-      const targetTop = container.scrollHeight - container.clientHeight;
       const delta = targetTop - startTop;
       if (delta <= 0) return;
 
@@ -321,7 +336,7 @@ export default function DemoTwoPage() {
 
       slowScrollRafRef.current = window.requestAnimationFrame(tick);
     },
-    [cancelSlowScroll],
+    [STREAM_SCROLL_COMFORT_GAP_PX, cancelSlowScroll],
   );
 
   const sleep = React.useCallback((ms: number) => {
@@ -386,12 +401,14 @@ export default function DemoTwoPage() {
       for (const ch of content) {
         built += ch;
         updateMessageById(id, { content: built });
-        scrollToBottom(false);
+        if (isNearBottom()) {
+          scrollToBottom(false, "comfort");
+        }
         await sleep(18);
       }
       if (widget) updateMessageById(id, { widget });
     },
-    [appendMessage, scrollToBottom, sleep, updateMessageById],
+    [appendMessage, isNearBottom, scrollToBottom, sleep, updateMessageById],
   );
 
   const startLoanFlow = React.useCallback(() => {
@@ -455,8 +472,12 @@ export default function DemoTwoPage() {
     const shouldAutoScroll = isThinking || isStreamingReply || lastMessage?.role === "assistant";
     if (!shouldAutoScroll) return;
 
-    scrollToBottom(isLoanStreamingRef.current);
-  }, [isStreamingReply, isThinking, messages, scrollToBottom]);
+    if (isLoanStreamingRef.current && !isNearBottom()) return;
+    scrollToBottom(
+      isLoanStreamingRef.current,
+      isLoanStreamingRef.current ? "comfort" : "bottom",
+    );
+  }, [isNearBottom, isStreamingReply, isThinking, messages, scrollToBottom]);
 
   const profileQuery = useQuery({
     queryKey: ["profile", selectedAccountId],
