@@ -20,6 +20,7 @@ const INSTITUTION_ICON_MATCHERS: Array<{
   },
   { key: "ktc", keywords: ["KTC", "KRUNGTHAI CARD", "กรุงไทยคาร์ด"] },
   { key: "uob", keywords: ["UOB", "UNITED OVERSEAS", "ยูโอบี"] },
+  { key: "pea", keywords: ["PEA", "PROVINCIAL ELECTRICITY", "การไฟฟ้า"] },
 ];
 
 export function resolveInstitutionIconKey(input: string): string | undefined {

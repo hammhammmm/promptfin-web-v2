@@ -247,6 +247,7 @@ export function PaymentReceiptWidget({
           iconSrc={destinationIconSrc}
           iconAlt={normalizedDestBank}
           iconFallbackText={!destinationIconSrc ? normalizedDestBank.slice(0, 4) : undefined}
+          iconObjectClassName="w-full h-full object-cover"
         />
         <TransferDivider />
         <TransferAmountBlock

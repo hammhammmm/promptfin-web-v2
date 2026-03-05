@@ -109,7 +109,7 @@ const LOAN_INTRO_MESSAGE = [
   "ข้อมูลเบื้องต้นของคุณเจนครับ:",
 ].join("\n");
 const LOAN_POST_WIDGET_MESSAGE = "คุณเจนจะกู้เท่าไหร่ดีครับ?";
-const LOAN_10K_SUMMARY_MESSAGE = "โอเคค่ะ~ ขอสรุปให้ดูก่อนนะครับ 👇";
+const LOAN_10K_SUMMARY_MESSAGE = "โอเครับ~ ขอสรุปให้ดูก่อนนะครับ 👇";
 const LOAN_APPROVED_MESSAGE = [
   "อนุมัติสินเชื่อเรียบร้อย! 🎉",
   "เงิน 10,000 บาท โอนเข้าบัญชีของคุณเจนแล้วครับ",
