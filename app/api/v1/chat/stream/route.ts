@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storePreloadedTts } from "@/src/server/ttsPreloadCache";
+import { getExactMatchStaticReply } from "@/src/server/exactMatchStaticReplies";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -220,6 +221,30 @@ export const POST = async (req: NextRequest) => {
 
     const message = getLastUserMessage(cleaned);
     if (!message) throw new Error("Cannot resolve latest user message");
+    const staticReply = getExactMatchStaticReply(message);
+    if (staticReply) {
+      const payload = `data: ${JSON.stringify({
+        type: "done",
+        response: {
+          reply_text: staticReply,
+          ui: null,
+          meta: {
+            next: "reply_to_user",
+            stop_tool_calls: true,
+            prepared_id: "",
+          },
+        },
+      })}\n\n`;
+
+      return new Response(payload, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/event-stream; charset=utf-8",
+          "Cache-Control": "no-cache, no-transform",
+          Connection: "keep-alive",
+        },
+      });
+    }
 
     const upstreamResp = await fetch(`${agentBaseUrl}/chat/completions/stream`, {
       method: "POST",

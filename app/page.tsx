@@ -41,7 +41,7 @@ const STREAMING_CONFIG = {
 const CONFIRM_WIDGET_EXIT_MS = 280;
 const STREAM_CURSOR_TOKEN = "__STREAM_CURSOR__";
 const SPLASH_DURATION_MS = 1700;
-const POST_WIDGET_FOLLOWUP_MESSAGE = "มีอะไรให้ผมช่วยดูแลเพิ่มเติมไหมครับ";
+const POST_WIDGET_FOLLOWUP_MESSAGE = "หากต้องการให้ช่วยเรื่องอื่นเพิ่มเติม แจ้งผมได้เลยครับ";
 const TTS_ENABLED_STORAGE_KEY = "pf_tts_enabled";
 const PROMPT_INJECTION_PATTERNS: ReadonlyArray<RegExp> = [
   /ignore\s+(all\s+)?(previous|prior)\s+instructions?/i,
@@ -64,6 +64,9 @@ function shouldKeepMessage(message: Message): boolean {
 function mapChatErrorToToastMessage(rawError: string): string {
   const error = rawError.toLowerCase();
 
+  if (error.includes("topup failed: timeout of 20000ms exceeded")) {
+    return "ขออภัยครับ ระบบใช้เวลานานกว่าปกติ กรุณาลองใหม่อีกครั้ง";
+  }
   if (error.includes("message exceeds") || error.includes("too long")) {
     return "ข้อความยาวเกินกำหนด กรุณาย่อข้อความแล้วลองใหม่";
   }
@@ -207,6 +210,7 @@ interface AssistantMessageBodyProps {
 
 type MarkdownBlock =
   | { type: "h1"; text: string }
+  | { type: "h2"; text: string }
   | { type: "h3"; text: string }
   | { type: "ol"; items: string[]; start: number }
   | { type: "ul"; items: string[] }
@@ -274,17 +278,24 @@ function parseMarkdownBlocks(input: string): MarkdownBlock[] {
       continue;
     }
 
-    if (/^#\s+/.test(line)) {
-      flushParagraph();
-      flushList();
-      blocks.push({ type: "h1", text: line.replace(/^#\s+/, "").trim() });
-      continue;
-    }
-
     if (/^###\s+/.test(line)) {
       flushParagraph();
       flushList();
       blocks.push({ type: "h3", text: line.replace(/^###\s+/, "").trim() });
+      continue;
+    }
+
+    if (/^##\s+/.test(line)) {
+      flushParagraph();
+      flushList();
+      blocks.push({ type: "h2", text: line.replace(/^##\s+/, "").trim() });
+      continue;
+    }
+
+    if (/^#\s+/.test(line)) {
+      flushParagraph();
+      flushList();
+      blocks.push({ type: "h1", text: line.replace(/^#\s+/, "").trim() });
       continue;
     }
 
@@ -407,6 +418,7 @@ function MarkdownMessage({ content }: { content: string }) {
   const looksLikeMarkdown = React.useMemo(
     () =>
       /(^|\n)\s*#\s+/.test(contentWithoutCursor) ||
+      /(^|\n)\s*##\s+/.test(contentWithoutCursor) ||
       /(^|\n)\s*###\s+/.test(contentWithoutCursor) ||
       /(^|\n)\s*\d+\.\s+/.test(contentWithoutCursor) ||
       /(^|\n)\s*[-*]\s+/.test(contentWithoutCursor) ||
@@ -445,6 +457,18 @@ function MarkdownMessage({ content }: { content: string }) {
           );
         }
 
+        if (block.type === "h2") {
+          return (
+            <h2
+              key={`h2-${index}`}
+              className="text-[18px] font-bold text-white"
+            >
+              {renderInlineMarkdown(block.text)}
+              {hasStreamCursor && isLastBlock && renderStreamCursor()}
+            </h2>
+          );
+        }
+
         if (block.type === "h3") {
           return (
             <h3
@@ -462,14 +486,15 @@ function MarkdownMessage({ content }: { content: string }) {
             <ol
               key={`ol-${index}`}
               start={block.start}
-              className="my-2 list-decimal pl-8 space-y-6 marker:text-white/70 text-md"
+              className="my-2 pl-2 space-y-4 text-md"
             >
               {block.items.map((item, itemIndex) => (
                 <li
                   key={`li-${itemIndex}`}
-                  className="text-md leading-relaxed text-white/80"
+                  className="text-md leading-relaxed text-white/80 flex gap-2"
                 >
-                  {renderInlineMarkdown(item)}
+                  <span className="text-white/70 shrink-0">{block.start + itemIndex}.</span>
+                  <span>{renderInlineMarkdown(item)}</span>
                   {hasStreamCursor &&
                     isLastBlock &&
                     itemIndex === block.items.length - 1 &&
@@ -484,14 +509,15 @@ function MarkdownMessage({ content }: { content: string }) {
           return (
             <ul
               key={`ul-${index}`}
-              className="my-1 list-disc pl-10 space-y-3 marker:text-white/70 text-md break-words [overflow-wrap:anywhere]"
+              className="my-1 pl-2 space-y-3 text-md break-words [overflow-wrap:anywhere]"
             >
               {block.items.map((item, itemIndex) => (
                 <li
                   key={`uli-${itemIndex}`}
-                  className="text-md leading-relaxed text-white/80 break-words [overflow-wrap:anywhere]"
+                  className="text-md leading-relaxed text-white/80 break-words [overflow-wrap:anywhere] flex gap-2"
                 >
-                  {renderInlineMarkdown(item)}
+                  <span className="text-white/70 shrink-0">•</span>
+                  <span>{renderInlineMarkdown(item)}</span>
                   {hasStreamCursor &&
                     isLastBlock &&
                     itemIndex === block.items.length - 1 &&

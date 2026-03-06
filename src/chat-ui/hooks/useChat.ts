@@ -121,14 +121,26 @@ function formatMoneyInText(text: string): string {
   return out;
 }
 
+function sanitizeSystemMessage(text: string): string {
+  const normalized = text.toLowerCase();
+  if (normalized.includes("topup failed: timeout of 20000ms exceeded")) {
+    return "ขออภัยครับ ระบบใช้เวลานานกว่าปกติ จึงยังทำรายการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง";
+  }
+  return text;
+}
+
 function postProcessChatOutput(out: ChatOutput): ChatOutput {
   const reply =
-    typeof out.reply_text === "string" ? formatMoneyInText(out.reply_text) : out.reply_text;
+    typeof out.reply_text === "string"
+      ? sanitizeSystemMessage(formatMoneyInText(out.reply_text))
+      : out.reply_text;
   const ui = isRecord(out.ui) ? { ...out.ui } : out.ui;
   if (isRecord(ui) && isRecord(ui["props"])) {
     const props = { ...(ui["props"] as Record<string, unknown>) };
     if (typeof props["summary"] === "string") props["summary"] = formatMoneyInText(props["summary"]);
-    if (typeof props["message"] === "string") props["message"] = formatMoneyInText(props["message"]);
+    if (typeof props["message"] === "string") {
+      props["message"] = sanitizeSystemMessage(formatMoneyInText(props["message"]));
+    }
     ui["props"] = props;
   }
   return { ...out, reply_text: reply, ui };

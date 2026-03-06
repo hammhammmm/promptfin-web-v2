@@ -53,7 +53,7 @@ const STREAMING_CONFIG = {
 const CONFIRM_WIDGET_EXIT_MS = 280;
 const STREAM_CURSOR_TOKEN = "__STREAM_CURSOR__";
 const SPLASH_DURATION_MS = 1700;
-const POST_WIDGET_FOLLOWUP_MESSAGE = "คุณเจนครับอยากให้ผมช่วยอะไรอีกไหมครับ";
+const POST_WIDGET_FOLLOWUP_MESSAGE = "หากต้องการให้ช่วยเรื่องอื่นเพิ่มเติม แจ้งผมได้เลยครับ";
 const TTS_ENABLED_STORAGE_KEY = "pf_tts_enabled";
 const DEMO4_BULK_PREPARED_ID = "demo4-bulk-payment-500-300-2000";
 const DEMO4_ADJUST_LIMIT_PREPARED_ID = "demo4-adjust-limit-100000";
@@ -215,6 +215,9 @@ function shouldKeepMessage(message: Message): boolean {
 function mapChatErrorToToastMessage(rawError: string): string {
   const error = rawError.toLowerCase();
 
+  if (error.includes("topup failed: timeout of 20000ms exceeded")) {
+    return "ขออภัยครับ ระบบใช้เวลานานกว่าปกติ กรุณาลองใหม่อีกครั้ง";
+  }
   if (error.includes("message exceeds") || error.includes("too long")) {
     return "ข้อความยาวเกินกำหนด กรุณาย่อข้อความแล้วลองใหม่";
   }

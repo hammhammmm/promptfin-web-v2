@@ -1,5 +1,6 @@
 // app/api/chat/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { getExactMatchStaticReply } from "@/src/server/exactMatchStaticReplies";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 type UIAction =
@@ -166,6 +167,26 @@ export const POST = async (req: NextRequest) => {
 
       message = getLastUserMessage(cleaned);
       if (!message) throw new Error("Cannot resolve latest user message");
+      const staticReply = getExactMatchStaticReply(message);
+      if (staticReply) {
+        return NextResponse.json(
+          {
+            id: clientEventId,
+            object: "chat.completion",
+            created: Math.floor(Date.now() / 1000),
+            model,
+            sessionId,
+            choices: [
+              {
+                index: 0,
+                message: { role: "assistant", content: staticReply },
+                finish_reason: "stop",
+              },
+            ],
+          },
+          { status: 200 },
+        );
+      }
       upstreamPayload = {
         messages: [{ role: "user", content: message }],
       };
