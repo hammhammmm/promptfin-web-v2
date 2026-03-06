@@ -142,11 +142,11 @@ function isDemo4AdjustLimitPrompt(text: string): boolean {
   return hasAdjustWord && hasTargetAmount;
 }
 
-function randomThinkingDelayTransferMs(min = 5000, max = 7000): number {
+function randomThinkingDelayTransferMs(min = 1000, max = 2000): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function randomThinkingDelayLoanAndLimitMs(min = 3000, max = 5000): number {
+function randomThinkingDelayLoanAndLimitMs(min = 1000, max = 2000): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
