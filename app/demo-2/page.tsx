@@ -246,7 +246,6 @@ export default function DemoTwoPage() {
     },
   ]);
   const [inputText, setInputText] = React.useState("");
-  const [ttsEnabled, setTtsEnabled] = React.useState(false);
   const [isThinking, setIsThinking] = React.useState(false);
   const [isStreamingReply, setIsStreamingReply] = React.useState(false);
   const [isLoanPinModalOpen, setIsLoanPinModalOpen] = React.useState(false);
@@ -660,8 +659,6 @@ export default function DemoTwoPage() {
               accounts={accountOptions}
               selectedAccountId={selectedAccountId}
               onSelectAccount={setSelectedAccountId}
-              ttsEnabled={ttsEnabled}
-              onToggleTts={setTtsEnabled}
             />
           </div>
 

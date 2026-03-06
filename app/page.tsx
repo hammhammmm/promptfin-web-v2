@@ -1873,8 +1873,6 @@ export default function HomePage() {
               accounts={accountOptions}
               selectedAccountId={selectedAccountId}
               onSelectAccount={setSelectedAccountId}
-              ttsEnabled={ttsEnabled}
-              onToggleTts={setTtsEnabled}
             />
           </div>
           <main

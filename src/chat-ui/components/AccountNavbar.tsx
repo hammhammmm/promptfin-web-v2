@@ -19,8 +19,6 @@ type Props = {
   accounts: AccountOption[];
   selectedAccountId: string;
   onSelectAccount: (accountId: string) => void;
-  ttsEnabled?: boolean;
-  onToggleTts?: (enabled: boolean) => void;
 };
 
 const DEFAULT_AVATAR_CLASS =
@@ -60,8 +58,6 @@ export function AccountNavbar({
   accounts,
   selectedAccountId,
   onSelectAccount,
-  ttsEnabled = false,
-  onToggleTts,
 }: Props) {
   const [isOpen, setIsOpen] = React.useState(false);
   const rootRef = React.useRef<HTMLDivElement>(null);
@@ -147,30 +143,6 @@ export function AccountNavbar({
             role="listbox"
             aria-label="บัญชีทั้งหมด"
           >
-            <div className="mb-2 rounded-2xl border border-white/12 bg-white/8 p-3">
-              <button
-                type="button"
-                role="switch"
-                aria-checked={ttsEnabled}
-                aria-label="เปิดหรือปิดเสียงตอบกลับ"
-                onClick={() => onToggleTts?.(!ttsEnabled)}
-                className="group flex w-full select-none items-center justify-between gap-2 text-xs text-white/90"
-              >
-                <span className="font-medium">Voice</span>
-                <span
-                  className={`relative h-5 w-9 rounded-full transition ${
-                    ttsEnabled ? "bg-[#3533CD]" : "bg-white/25"
-                  }`}
-                >
-                  <span
-                    className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-[0_1px_6px_rgba(0,0,0,0.35)] transition ${
-                      ttsEnabled ? "translate-x-4" : "translate-x-0"
-                    }`}
-                  />
-                </span>
-              </button>
-            </div>
-
             {accounts.map((account) => {
               const isActive = account.id === selectedAccountId;
               return (
