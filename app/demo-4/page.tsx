@@ -97,12 +97,11 @@ function isDemo4BulkPaymentPrompt(text: string): boolean {
   const numberNormalized = normalized.replace(/,/g, "");
   const hasStandaloneNumber = (num: string) =>
     new RegExp(`(^|\\D)${num}(\\D|$)`).test(numberNormalized);
+  const has500 = hasStandaloneNumber("500") || normalized.includes("ห้าร้อย");
+  const has300 = hasStandaloneNumber("300") || normalized.includes("สามร้อย");
+  const has2000 = hasStandaloneNumber("2000") || normalized.includes("สองพัน");
 
-  if (
-    hasStandaloneNumber("500") &&
-    hasStandaloneNumber("300") &&
-    hasStandaloneNumber("2000")
-  ) {
+  if (has500 && has300 && has2000) {
     return true;
   }
   if (
