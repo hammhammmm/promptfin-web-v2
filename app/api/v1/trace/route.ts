@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const TRACE_BASE_URL =
-  "https://mcp-server-46469170160.asia-southeast1.run.app/trace";
+  "https://mcp-server-v2-46469170160.asia-southeast1.run.app/trace";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
