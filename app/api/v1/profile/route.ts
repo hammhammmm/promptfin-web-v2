@@ -64,7 +64,7 @@ export const GET = async (req: NextRequest) => {
 
   const baseUrl =
     process.env.BANKING_API_URL ??
-    "https://banking-api-46469170160.asia-southeast1.run.app";
+    "https://banking-api-v2-46469170160.asia-southeast1.run.app";
 
   try {
     const response = await fetch(
