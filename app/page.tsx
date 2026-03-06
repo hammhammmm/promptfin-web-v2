@@ -1971,44 +1971,46 @@ export default function HomePage() {
                 </div>
 
                 <div
-                  className={`transition-[max-height,margin-top] duration-500 ease-in-out overflow-hidden ${
+                  className={`grid transition-[grid-template-rows,margin-top] duration-500 ease-in-out ${
                     !shouldCenterLandingGreeting
-                      ? "max-h-[500px] mt-8"
-                      : "max-h-0 mt-0"
+                      ? "grid-rows-[1fr] mt-8"
+                      : "grid-rows-[0fr] mt-0"
                   }`}
                   style={shouldCenterLandingGreeting ? { transitionDelay: "120ms" } : undefined}
                 >
-                  <div className="space-y-4">
-                    <div
-                      className={`transition-all duration-500 ease-out ${
-                        showActionGrid
-                          ? "opacity-100 translate-y-0"
-                          : "opacity-0 translate-y-1.5"
-                      }`}
-                    >
-                      <ActionGrid
-                        onActionClick={handleQuickActionSend}
-                        disabled={isLoading || isInputLockedByWidgetAction}
-                        isVisible={showActionGrid}
-                      />
+                  <div className="min-h-0 overflow-hidden">
+                    <div className="space-y-4">
+                      <div
+                        className={`transition-all duration-500 ease-out ${
+                          showActionGrid
+                            ? "opacity-100 translate-y-0"
+                            : "opacity-0 translate-y-1.5"
+                        }`}
+                      >
+                        <ActionGrid
+                          onActionClick={handleQuickActionSend}
+                          disabled={isLoading || isInputLockedByWidgetAction}
+                          isVisible={showActionGrid}
+                        />
+                      </div>
+                      <div
+                        className={`relative transition-all duration-500 ease-out ${
+                          showActionScroll
+                            ? "opacity-100 translate-y-0"
+                            : "opacity-0 translate-y-1.5"
+                        }`}
+                      >
+                        <ActionScrollList
+                          onActionClick={handleQuickActionSend}
+                          disabled={isLoading || isInputLockedByWidgetAction}
+                        />
+                        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 sm:w-16 bg-gradient-to-r from-[#040A23] via-[#040A23]/75 to-transparent" />
+                        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 sm:w-16 bg-gradient-to-l from-[#040A23] via-[#040A23]/75 to-transparent" />
+                      </div>
                     </div>
-                    <div
-                      className={`relative transition-all duration-500 ease-out ${
-                        showActionScroll
-                          ? "opacity-100 translate-y-0"
-                          : "opacity-0 translate-y-1.5"
-                      }`}
-                    >
-                      <ActionScrollList
-                        onActionClick={handleQuickActionSend}
-                        disabled={isLoading || isInputLockedByWidgetAction}
-                      />
-                      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 sm:w-16 bg-gradient-to-r from-[#040A23] via-[#040A23]/75 to-transparent" />
-                      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 sm:w-16 bg-gradient-to-l from-[#040A23] via-[#040A23]/75 to-transparent" />
+                    <div className="flex flex-col items-center mt-4">
+                      <div className="h-px w-4/5 bg-white/8" />
                     </div>
-                  </div>
-                  <div className="flex flex-col items-center mt-4">
-                    <div className="h-px w-4/5 bg-white/8" />
                   </div>
                 </div>
 
