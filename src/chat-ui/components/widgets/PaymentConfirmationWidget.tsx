@@ -3,6 +3,7 @@ import { Modal, ModalContent } from "@heroui/react";
 import { Delete, X } from "lucide-react";
 import {
   formatDestinationIdentifier,
+  normalizeDestinationBankLabel,
   resolveInstitutionIconKey,
   TransferActionButtons,
   TransferAmountBlock,
@@ -241,7 +242,7 @@ export function PaymentConfirmationWidget({
     normalizeDisplayValue(beneficiaryName) || normalizeDisplayValue(target) || "-";
   const rawDestinationAccount =
     normalizeDisplayValue(destinationAccount) || "-";
-  const displayDestinationBank = normalizeDisplayValue(destinationBank) || "-";
+  const displayDestinationBank = normalizeDestinationBankLabel(destinationBank) || "-";
   const displayCurrency = currency || "บาท";
   const displaySourceAccountName = sourceAccountName?.trim() || displayBeneficiary;
   const displaySourceAccountNo = sourceAccountNo?.trim() || "-";

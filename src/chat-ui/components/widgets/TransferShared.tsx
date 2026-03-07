@@ -80,6 +80,13 @@ export function formatDestinationIdentifier(
   return trimmed;
 }
 
+export function normalizeDestinationBankLabel(value?: string): string | undefined {
+  const trimmed = value?.trim() || "";
+  if (!trimmed || trimmed === "-") return undefined;
+  if (trimmed.toLowerCase() === "promptfin") return "PromptPay";
+  return trimmed;
+}
+
 export function formatMoneyAmount(value: number, locale = "th-TH"): string {
   const amount = Number.isFinite(value) ? value : 0;
   const hasFraction = Math.abs(amount % 1) > Number.EPSILON;

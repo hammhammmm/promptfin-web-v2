@@ -25,7 +25,10 @@ import {
 import { PaymentCancelledWidget } from "@/src/chat-ui/components/widgets/PaymentCancelledWidget";
 import { PaymentActionListWidget } from "@/src/chat-ui/components/widgets/PaymentActionListWidget";
 import { SplashScreen } from "@/src/chat-ui/components/SplashScreen";
-import { formatDestinationIdentifier } from "@/src/chat-ui/components/widgets/TransferShared";
+import {
+  formatDestinationIdentifier,
+  normalizeDestinationBankLabel,
+} from "@/src/chat-ui/components/widgets/TransferShared";
 
 const STREAMING_CONFIG = {
   minLengthToAnimate: 24,
@@ -741,7 +744,7 @@ function buildReceiptDisplayContextFromConfirmation(
 ): ReceiptDisplayContext {
   const beneficiary = props.beneficiaryName?.trim() || props.target?.trim() || "";
   const destinationAccountRaw = props.destinationAccount?.trim() || "";
-  const destinationBank = props.destinationBank?.trim() || "";
+  const destinationBank = normalizeDestinationBankLabel(props.destinationBank) || "";
   const normalizedDestinationBank = destinationBank.toUpperCase();
   const isTelcoTopUp =
     normalizedDestinationBank === "AIS" ||

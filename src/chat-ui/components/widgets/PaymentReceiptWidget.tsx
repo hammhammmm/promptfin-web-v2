@@ -3,6 +3,7 @@ import { Check, XCircle } from "lucide-react";
 import {
   formatDestinationIdentifier,
   looksLikeThaiMobile,
+  normalizeDestinationBankLabel,
   resolveInstitutionIconKey,
   TransferActionButtons,
   TransferAmountBlock,
@@ -154,7 +155,7 @@ export function PaymentReceiptWidget({
 
   const sourceName = sourceAccountName?.trim() || "บัญชีต้นทาง";
   const sourceNo = sourceAccountNo?.trim() || "X 1234";
-  const destBank = destinationBank?.trim() || "AIS";
+  const destBank = normalizeDestinationBankLabel(destinationBank) || "AIS";
   const destTitle = destinationLabel?.trim() || trimmedSummary || "เติมเงินสำเร็จ";
   const normalizedDestBank = destBank.toUpperCase();
   const isTelcoTopUp =
