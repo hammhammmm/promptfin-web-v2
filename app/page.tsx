@@ -43,6 +43,7 @@ const STREAM_CURSOR_TOKEN = "__STREAM_CURSOR__";
 const SPLASH_DURATION_MS = 1700;
 const POST_WIDGET_FOLLOWUP_MESSAGE = "หากต้องการให้ช่วยเรื่องอื่นเพิ่มเติม แจ้งผมได้เลยครับ";
 const TTS_ENABLED_STORAGE_KEY = "pf_tts_enabled";
+const AUTO_SCROLL_BOTTOM_THRESHOLD_PX = 120;
 const PROMPT_INJECTION_PATTERNS: ReadonlyArray<RegExp> = [
   /ignore\s+(all\s+)?(previous|prior)\s+instructions?/i,
   /reveal\s+(the\s+)?(system|developer)\s+prompt/i,
@@ -1096,18 +1097,30 @@ export default function HomePage() {
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const chatScrollContainerRef = React.useRef<HTMLElement | null>(null);
   const streamScrollRafRef = React.useRef<number | null>(null);
-  const scrollChatToBottom = React.useCallback((behavior: ScrollBehavior = "smooth") => {
+  const autoScrollEnabledRef = React.useRef<boolean>(true);
+  const isChatNearBottom = React.useCallback(() => {
     const container = chatScrollContainerRef.current;
-    if (!container) {
-      messagesEndRef.current?.scrollIntoView({ behavior });
-      return;
-    }
-
-    container.scrollTo({
-      top: container.scrollHeight,
-      behavior,
-    });
+    if (!container) return true;
+    const distanceToBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+    return distanceToBottom <= AUTO_SCROLL_BOTTOM_THRESHOLD_PX;
   }, []);
+  const scrollChatToBottom = React.useCallback(
+    (behavior: ScrollBehavior = "smooth", force = false) => {
+      if (!force && !autoScrollEnabledRef.current) return;
+      const container = chatScrollContainerRef.current;
+      if (!container) {
+        messagesEndRef.current?.scrollIntoView({ behavior });
+        return;
+      }
+
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior,
+      });
+    },
+    [],
+  );
   const ttsAudioRef = React.useRef<HTMLAudioElement | null>(null);
   const ttsQueueRef = React.useRef<string[]>([]);
   const prefetchedAudioQueueRef = React.useRef<string[]>([]);
@@ -1482,15 +1495,17 @@ export default function HomePage() {
 
   React.useEffect(() => {
     if (messages.length > 0 || isLoading) {
-      scrollChatToBottom("smooth");
+      const behavior: ScrollBehavior = streamingAssistants > 0 ? "auto" : "smooth";
+      scrollChatToBottom(behavior);
     }
-  }, [isLoading, messages, scrollChatToBottom]);
+  }, [isLoading, messages, scrollChatToBottom, streamingAssistants]);
 
   const requestStreamingScroll = React.useCallback(() => {
+    if (!autoScrollEnabledRef.current) return;
     if (streamScrollRafRef.current !== null) return;
     streamScrollRafRef.current = window.requestAnimationFrame(() => {
       streamScrollRafRef.current = null;
-      scrollChatToBottom("smooth");
+      scrollChatToBottom("auto");
     });
   }, [scrollChatToBottom]);
 
@@ -1531,6 +1546,10 @@ export default function HomePage() {
   React.useEffect(() => {
     if (streamingAssistants > 0) requestStreamingScroll();
   }, [requestStreamingScroll, streamingAssistants]);
+
+  const handleChatScroll = React.useCallback(() => {
+    autoScrollEnabledRef.current = isChatNearBottom();
+  }, [isChatNearBottom]);
 
   const isActive = isFocused || inputText !== "";
   const hasMessages = messages.length > 0;
@@ -1818,6 +1837,7 @@ export default function HomePage() {
     };
     const newMessages = [...sanitizedHistoryMessages, newMessage, streamingAssistantMessage];
     const streamingAssistantIndex = newMessages.length - 1;
+    autoScrollEnabledRef.current = true;
     setMessages(newMessages);
 
     if (typeof text !== "string") setInputText("");
@@ -1903,6 +1923,7 @@ export default function HomePage() {
           </div>
           <main
             ref={chatScrollContainerRef}
+            onScroll={handleChatScroll}
             className={`flex-1 w-full pb-32 flex flex-col ${
               isFocused && !hasAssistantWidget
                 ? "overflow-hidden"
